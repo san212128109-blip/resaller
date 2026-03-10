@@ -1,4 +1,18 @@
-<!DOCTYPE html>
+// database/migrations/xxxx_add_role_to_users_table.php
+Schema::table('users', function (Blueprint $table) {
+    $table->string('role')->default('reseller'); // admin or reseller
+});
+
+// database/migrations/xxxx_create_products_table.php
+Schema::create('products', function (Blueprint $table) {
+    $table->id();
+    $table->foreignId('user_id')->constrained()->onDelete('cascade');
+    $table->string('name');
+    $table->text('description');
+    $table->decimal('price', 10, 2);
+    $table->enum('status', ['pending', 'approved'])->default('pending'); 
+    $table->timestamps();
+});<!DOCTYPE html>
 <html>
 <head>
     <title>Add Product</title>
