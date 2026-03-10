@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Add Product</title>
+    <style>
+        .container { width: 400px; margin: auto; }
+        input, textarea { width: 100%; padding: 10px; margin: 10px 0; }
+        button { padding: 10px 20px; background: darkblue; color: white; border: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Add a New Product</h2>
+        <form method="POST">
+            <input type="text" name="name" placeholder="Product Name" required>
+            <input type="text" name="price" placeholder="Price (e.g. 500)" required>
+            <textarea name="details" placeholder="Product Details" rows="4" required></textarea>
+            <button type="submit">Save Product</button>
+        </form>
+        <br>
+        <a href="{{ url_for('index') }}">Back to Home</a>
+    </div>
+</body>
+</html>
