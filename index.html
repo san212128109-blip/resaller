@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dhamaka Daily Items - Shop</title>
+<style>
+/* CSS কোড অপরিবর্তিত রাখা হয়েছে */
+body{font-family:Arial,sans-serif;background:#d4edda;color:#155724;transition:0.3s;}
+body.dark{background:#121212;color:#ddd;}
+header{background:#28a745;color:white;padding:1em;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:10;}
+header h1{margin:0;font-size:1.5em;}
+
+/* NAV স্টাইল আপডেট করা হলো: মেনু অ্যালাইনমেন্ট ঠিক করা হয়েছে */
+nav{
+    display:flex;
+    align-items:center;
+    flex-wrap:wrap;
+    gap: 1em; /* মেনু আইটেমগুলোর মধ্যে ব্যবধান */
+}
+nav a{
+    color:white;
+    text-decoration:none;
+    font-weight:bold;
+    transition:0.3s;
+    position:relative;
+}
+nav a:hover{text-decoration:underline;color:#ffc107;}
+nav #cartLink::after{content:attr(data-count);position:absolute;top:-10px;right:-10px;background:red;color:white;width:20px;height:20px;text-align:center;line-height:20px;border-radius:50%;font-size:0.8em;display:inline-block;}
+nav button{margin-left:1em;cursor:pointer;}
+.page{display:none;padding:1em;}
+h1,h2,h3{text-align:center;margin-bottom:0.5em;}
+.product-list,.cart-list{display:flex;flex-wrap:wrap;gap:1em;justify-content:center;margin-top:1em;}
+.product{border:1px solid #28a745;border-radius:12px;padding:1em;width:200px;text-align:center;background:#fff;box-shadow:2px2px10px rgba(0,0,0,0.1);transition:0.3s;position:relative;overflow:hidden;}
+.product:hover{transform:scale(1.05);box-shadow:4px4px15px rgba(0,0,0,0.2);}
+.product img{transition: transform 0.3s;}
+.product:hover img{transform:scale(1.2);}
+.badge{position:absolute;top:10px;left:10px;background:#ffc107;color:#000;padding:2px 6px;border-radius:4px;font-size:0.8em;animation:bounce 1s infinite alternate;}
+@keyframes bounce{0%{transform:translateY(0);}100%{transform:translateY(-5px);}}
+button{background:#28a745;color:white;border:none;padding:0.5em 1em;border-radius:5px;cursor:pointer;margin-top:0.5em;transition:0.3s;}
+button:hover{background:#218838;}
+input,select,textarea{padding:0.5em;margin:0.3em 0;width:90%;border-radius:5px;border:1px solid #ccc;}
+#cartSummary{text-align:center;margin-top:1em;font-weight:bold;}
+/* Updated Carousel Styles for better Admin integration */
+.carousel{display:flex;overflow:hidden;width:90%;margin:1em auto;position:relative;border-radius:12px; border: 3px solid #ffc107; height: 300px; overflow-x: hidden; box-shadow: 0 4px 8px rgba(0,0,0,0.2);}
+.carousel-track {display: flex; transition: transform 0.5s ease-in-out; height: 100%;}
+.carousel-slide {min-width: 100%; height: 100%;}
+.carousel-slide img{width: 100%; height: 100%; object-fit: cover; border-radius: 9px;}
+.star{color:gold;font-size:1em;cursor:pointer;}
+.modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);justify-content:center;align-items:center;animation:fadeIn 0.3s;}
+.modal-content{background:#fff;padding:1em;border-radius:12px;width:90%;max-width:400px;text-align:center;}
+.modal button{width:45%;margin:0.5em;}
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+#support{position:fixed;bottom:20px;right:20px;background:#25D366;color:white;padding:10px 15px;border-radius:50px;cursor:pointer;box-shadow:2px2px10px rgba(0,0,0,0.2);}
+.product-image-container img {width: 150px; height: 150px; object-fit: cover; border-radius: 8px;}
+@media(max-width:600px){ 
+    .product{width:45%; } 
+    header{flex-direction:column;align-items:flex-start;} 
+    /* NAV স্টাইল মোবাইল ভিউয়ের জন্য আপডেট করা হলো */
+    nav {flex-direction: row; gap: 0.5em; margin-top: 5px; width: 100%; justify-content: space-between;} 
+    nav a{margin:0;}
+    nav button{margin-left: 0; margin-right: 0;}
+    .carousel {height: 150px;} /* ছোট স্ক্রিনের জন্য ক্যারাউজেলের উচ্চতা কমানো হলো */
+}
+#home {padding-top: 20px;}
+.product-list {padding: 20px 0; border-top: 1px solid #28a745;}
+#reviewSectionContainer {max-width: 900px; margin: 30px auto; padding: 20px; background: #f8f9fa; border-radius: 15px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);}
+.review-item {border-bottom: 1px dashed #ccc; padding: 10px 0; text-align: left;}
+.review-item:last-child {border-bottom: none;}
+.review-customer {font-size: 0.9em; color: #6c757d;}
+.review-customer b {color: #000;}
+#loginToggleBtn, #registerToggleBtn {width: 45%; background-color: #6c757d;}
+.promo-info {color: #dc3545; font-weight: bold; margin-top: 10px;}
+</style>
+</head>
+<body>
+
+<header>
+<h1>Dhamaka Daily Items</h1>
+<nav>
+<a href="#home" onclick="showPage('home')" id="homeLink" style="display:none;">Home</a>
+<a href="#categories" onclick="showPage('categories')" id="productsLink" style="display:none;">Products</a>
+<a id="cartLink" href="#cart" data-count="0" onclick="showPage('cart')" style="display:none;">Cart</a>
+<a href="#loginForm" onclick="showPage('loginForm')" id="loginRegisterLink">Login/Register</a>
+<button onclick="toggleDarkMode()">🌙</button>
+<button id="logoutBtn" style="display:none;" onclick="logout()">Logout</button>
+</nav>
+</header>
+
+<div id="home" class="page">
+<h2>⭐ Hot Promotions</h2>
+<div class="carousel" id="carousel">
+    <div class="carousel-track">
+                </div>
+</div>
+<h2 style="margin-top: 20px;">Featured Products</h2>
+<div class="product-list" id="homeList"></div>
+<div style="text-align:center;margin:20px 0;">
+<button onclick="showPage('categories')">View All Products →</button>
+</div>
+<div id="reviewSectionContainer">
+    <h3>⭐ Customer Reviews </h3>
+    <div id="reviewList"></div>
+    <hr style="margin:15px 0;">
+    <div id="reviewForm">
+        <h3>Submit Your Review</h3>
+        <p id="reviewAuthMsg" style="color: red; display: none;">Please login to submit a review.</p>
+        <div id="ratingStars"></div>
+        <textarea id="reviewText" placeholder="Your review"></textarea>
+        <button onclick="submitReview()">Submit Review</button>
+    </div>
+</div>
+</div>
+
+<div id="categories" class="page">
+<h2>All Products</h2>
+<select id="categoryFilter" onchange="filterCategory()"><option value="All">All</option></select>
+<input type="text" id="searchInput" placeholder="Search Products..." oninput="filterCategory()">
+<select id="sortSelect" onchange="filterCategory()">
+<option value="">Sort By</option>
+<option value="price-asc">Price Low→High</option>
+<option value="price-desc">Price High→Low</option>
+<option value="name-asc">Name A→Z</option>
+<option value="name-desc">Name Z→A</option>
+</select>
+<div class="product-list" id="categoryList"></div>
+</div>
+
+<div id="cart" class="page">
+<h2>Your Cart</h2>
+<div class="cart-list" id="cartList"></div>
+<div id="cartSummary"></div>
+<input type="text" id="promoCodeInput" placeholder="Enter Promocode">
+<button onclick="applyPromo()">Apply Promocode</button>
+<div id="promoResult" class="promo-info"></div>
+<button onclick="checkout()">Checkout</button>
+</div>
+
+<div id="loginForm" class="page">
+<h2>Customer Area</h2>
+<div style="text-align:center;margin-bottom:1em;">
+<button onclick="toggleAuthForm('login')" id="loginToggleBtn">Login</button>
+<button onclick="toggleAuthForm('register')" id="registerToggleBtn">Register</button>
+</div>
+
+<div id="loginDiv" style="max-width:400px;margin:1em auto;text-align:center;">
+<h3>Login</h3>
+<input type="text" id="usernameLogin" placeholder="Username">
+<input type="password" id="passwordLogin" placeholder="Password">
+<button onclick="customerLogin()">Login</button>
+<p id="loginMsg" style="color:red;"></p>
+</div>
+
+<div id="registerDiv" style="max-width:400px;margin:1em auto;text-align:center;display:none;">
+<h3>Register</h3>
+<input type="text" id="usernameRegister" placeholder="Username">
+<input type="text" id="userWhatsappRegister" placeholder="WhatsApp Number">
+<input type="text" id="userAddressRegister" placeholder="Address">
+<input type="password" id="passwordRegister" placeholder="Password">
+<button onclick="customerRegister()">Register</button>
+<p id="registerMsg" style="color:red;"></p>
+</div>
+</div>
+
+<div id="support" onclick="openWhatsApp()">💬 Support</div>
+
+<script>
+// ==== INITIALIZE LOCALSTORAGE DATA MODELS (আপডেট করা হয়েছে) ====
+function initializeLocalStorage() {
+    // Default Products (ইমেজ URL পরিবর্তন করে ডামি টেক্সট যোগ করা হয়েছে)
+    if (!localStorage.getItem('products')) {
+        localStorage.setItem('products', JSON.stringify([
+            // ⭐ এখানে imageURL এ https://via.placeholder.com ব্যবহার করা হয়েছে। আপনি এই URL গুলো আপনার নিজস্ব ছবির পাথ বা URL দিয়ে বদলে দিন।
+            { id: 1, name: 'Premium Rice (5kg)', category: 'Groceries', price: 6.50, stock: 100, vendorId: 101, status: 'Approved', promoCodeAssigned: 'RICE10', imageURL: 'https://via.placeholder.com/150/28a745/ffffff?text=Rice' },
+            { id: 2, name: 'Organic Eggs (1 doz)', category: 'Groceries', price: 2.80, stock: 50, vendorId: 101, status: 'Approved', promoCodeAssigned: '', imageURL: 'https://via.placeholder.com/150/ffc107/000000?text=Eggs' },
+            { id: 3, name: 'T-Shirt (Blue)', category: 'Fashion', price: 12.00, stock: 80, vendorId: 102, status: 'Approved', promoCodeAssigned: 'FASHION20', imageURL: 'https://via.placeholder.com/150/007bff/ffffff?text=T-Shirt' },
+            { id: 4, name: 'Smartphone A99', category: 'Electronics', price: 350.00, stock: 10, vendorId: 103, status: 'Approved', promoCodeAssigned: '', imageURL: 'https://via.placeholder.com/150/6c757d/ffffff?text=Phone' },
+            { id: 5, name: 'Running Shoes', category: 'Fashion', price: 45.00, stock: 30, vendorId: 102, status: 'Approved', promoCodeAssigned: '', imageURL: 'https://via.placeholder.com/150/17a2b8/ffffff?text=Shoes' },
+            { id: 6, name: 'Dish Soap (1L)', category: 'Household', price: 4.50, stock: 200, vendorId: 101, status: 'Approved', promoCodeAssigned: '', imageURL: 'https://via.placeholder.com/150/dc3545/ffffff?text=Soap' },
+        ]));
+    }
+    // Default Banners (ইমেজ URL পরিবর্তন করে ডামি টেক্সট যোগ করা হয়েছে)
+    if (!localStorage.getItem('banners')) {
+        localStorage.setItem('banners', JSON.stringify([
+            { id: 1, imageURL: 'https://via.placeholder.com/1200x300/28a745/ffffff?text=12.12+Grand+Sale', link: '#categories' }, 
+            { id: 2, imageURL: 'https://via.placeholder.com/1200x300/ffc107/000000?text=Upto+50%25+OFF', link: '#categories' }, 
+            { id: 3, imageURL: 'https://via.placeholder.com/1200x300/6c757d/ffffff?text=New+Customer+Voucher', link: '#loginForm' }
+        ]));
+    }
+    // Default Reviews
+    if (!localStorage.getItem('reviews')) {
+        localStorage.setItem('reviews', JSON.stringify([
+            { id: 1, customerName: 'Guest User', rating: 5, text: 'Great products and fast delivery!', date: new Date().toLocaleDateString() }
+        ]));
+    }
+    // Default Customers
+    if (!localStorage.getItem('customers')) {
+        localStorage.setItem('customers', JSON.stringify([{username: 'test', whatsapp: '01XXXXXXXXX', address: 'Test address', password: '123'}]));
+    }
+    // Default Promo Code Usage (for Admin Panel)
+    if (!localStorage.getItem('promocodeUsage')) {
+        localStorage.setItem('promocodeUsage', JSON.stringify({}));
+    }
+    // Dummy Orders data (if not exists)
+    if (!localStorage.getItem('orders')) {
+        localStorage.setItem('orders', JSON.stringify([]));
+    }
+    // Master Promocodes
+    if (!localStorage.getItem('masterPromocodes')) {
+        localStorage.setItem('masterPromocodes', JSON.stringify([{
+            code: 'FLASH10', type: 'fixed', discount: 10, minOrder: 50, scope: 'global', vendorId: null, status: 'Active'
+        }]));
+    }
+}
+initializeLocalStorage();
+
+
+// ==== GLOBAL STATE & DATA FETCH ====
+let products = []; 
+let masterPromocodes = JSON.parse(localStorage.getItem("masterPromocodes")||'[]');
+let banners = JSON.parse(localStorage.getItem("banners")||'[]');
+let reviews = JSON.parse(localStorage.getItem("reviews")||'[]');
+let cart = JSON.parse(localStorage.getItem("cart")||"[]");
+let customers = JSON.parse(localStorage.getItem("customers")||'[]');
+let loggedCustomer = JSON.parse(localStorage.getItem("loggedCustomer")||'null');
+let appliedPromo = null; // Stores the currently applied promo object
+
+// ==== PAGE CONTROL & AUTH STATE MANAGEMENT ====
+function showPage(page){
+    document.querySelectorAll('.page').forEach(p=>p.style.display='none');
+    document.getElementById(page).style.display='block';
+    renderAll();
+    if (page === 'home') {
+        startCarousel();
+    } else {
+        clearInterval(carouselInterval);
+    }
+}
+
+function updateNavLinks() {
+    const isLoggedIn = !!loggedCustomer;
+    document.getElementById('homeLink').style.display = isLoggedIn ? 'block' : 'none';
+    document.getElementById('productsLink').style.display = isLoggedIn ? 'block' : 'none';
+    document.getElementById('cartLink').style.display = isLoggedIn ? 'block' : 'none';
+    document.getElementById('logoutBtn').style.display = isLoggedIn ? 'inline-block' : 'none';
+    document.getElementById('loginRegisterLink').style.display = isLoggedIn ? 'none' : 'block';
+}
+
+// Initial page load
+document.addEventListener('DOMContentLoaded', () => {
+    updateNavLinks(); // নেভিগেশন লিংক স্ট্যাটাস সেট করুন
+
+    if(loggedCustomer){ 
+        showPage('home'); 
+    } else { 
+        showPage('loginForm'); 
+        toggleAuthForm('login'); // লগইন ফর্ম ডিফল্ট হিসেবে দেখাবে
+    }
+    // Render features that don't depend on specific pages
+    renderReviews();
+    renderStarRatingForm();
+});
+
+
+function toggleDarkMode(){ document.body.classList.toggle('dark'); }
+
+// ==== AUTH (UPDATED & FIXED) ====
+function toggleAuthForm(mode){
+    document.getElementById('loginDiv').style.display = mode==='login'?'block':'none';
+    document.getElementById('registerDiv').style.display = mode==='register'?'block':'none';
+    document.getElementById('loginToggleBtn').style.backgroundColor = mode==='login'?'#28a745':'#6c757d';
+    document.getElementById('registerToggleBtn').style.backgroundColor = mode==='register'?'#28a745':'#6c757d';
+    document.getElementById("loginMsg").innerText=""; // মেসেজ রিসেট
+    document.getElementById("registerMsg").innerText=""; // মেসেজ রিসেট
+}
+
+function customerRegister(){
+    let username=document.getElementById("usernameRegister").value.trim();
+    let whatsapp=document.getElementById("userWhatsappRegister").value.trim();
+    let address=document.getElementById("userAddressRegister").value.trim();
+    let password=document.getElementById("passwordRegister").value;
+    
+    customers = JSON.parse(localStorage.getItem("customers")||'[]');
+
+    if(!username||!whatsapp||!address||!password){ document.getElementById("registerMsg").innerText="Fill all fields"; return; }
+    if(customers.some(c=>c.username===username)){ document.getElementById("registerMsg").innerText="Username exists"; return; }
+    
+    customers.push({username,whatsapp,address,password});
+    localStorage.setItem("customers",JSON.stringify(customers));
+    
+    document.getElementById("usernameLogin").value = username;
+    document.getElementById("passwordLogin").value = "";
+    toggleAuthForm('login'); 
+    document.getElementById("loginMsg").innerText="Registered successfully! Please login.";
+}
+
+function customerLogin(){
+    let username=document.getElementById("usernameLogin").value.trim();
+    let password=document.getElementById("passwordLogin").value;
+    
+    customers = JSON.parse(localStorage.getItem("customers")||'[]');
+
+    let user = customers.find(c=>c.username===username && c.password===password);
+    if(!user){ document.getElementById("loginMsg").innerText="Invalid username or password."; return; }
+    
+    loggedCustomer=user; 
+    localStorage.setItem("loggedCustomer",JSON.stringify(loggedCustomer));
+    
+    updateNavLinks(); // নেভিগেশন আপডেট করুন
+    showPage('home'); 
+    document.getElementById("loginMsg").innerText=""; // মেসেজ সাফ করুন
+}
+
+function logout(){ 
+    loggedCustomer=null; 
+    localStorage.removeItem("loggedCustomer"); 
+    cart = [];
+    localStorage.removeItem("cart");
+    appliedPromo = null;
+    
+    updateNavLinks(); // নেভিগেশন আপডেট করুন
+    showPage('loginForm'); 
+    toggleAuthForm('login'); 
+}
+
+// ==== RENDER PRODUCTS (কার্ট অ্যাড লজিক আপডেট করা হয়েছে) ====
+const homeList=document.getElementById("homeList");
+const categoryList=document.getElementById("categoryList");
+const cartList=document.getElementById("cartList");
+const cartLink=document.getElementById("cartLink");
+
+function renderAll() {
+    products = JSON.parse(localStorage.getItem("products")||'[]').filter(p=>p.status==='Approved');
+    banners = JSON.parse(localStorage.getItem("banners")||'[]'); 
+    masterPromocodes = JSON.parse(localStorage.getItem("masterPromocodes")||'[]');
+
+    renderProducts(homeList, products.slice(0, 6)); // Show first 6 approved products on home
+    filterCategory(); 
+    renderCart();
+    updateCartBadge();
+    populateCategoryFilter();
+    renderReviews();
+}
+
+function renderProducts(list, arr){
+    list.innerHTML=''; if(arr.length===0){ list.innerHTML="<p>No Approved products available.</p>"; return; }
+    arr.forEach(p=>{
+        const div=document.createElement('div'); div.className='product';
+        const badgeHTML=p.promoCodeAssigned?`<div class="badge">${p.promoCodeAssigned}</div>`:'';
+        // ⭐ ছবি লোড না হলে, 'No Image' টেক্সট দেখাবে।
+        const imageUrl = p.imageURL || 'https://via.placeholder.com/150?text=No+Image';
+        div.innerHTML=`${badgeHTML}<div class="product-image-container"><img src="${imageUrl}" alt="${p.name}"></div>
+        <h3>${p.name}</h3><p>Category: ${p.category}</p><p><b>$${p.price.toFixed(2)}</b></p><p>Stock: ${p.stock}</p>
+        <button onclick="addToCartById(${p.id})" ${p.stock<=0?'disabled style="background-color:#ff6347;"':''}>${p.stock>0?'Add to Cart':'Out of Stock'}</button>`;
+        list.appendChild(div);
+    });
+}
+
+// ==== CART FUNCTIONALITY (নতুন/আপডেট করা হয়েছে) ====
+
+function addToCartById(id){
+    // id দিয়ে গ্লোবাল products অ্যারে থেকে প্রোডাক্টটি খুঁজে বের করুন
+    const product = products.find(p => p.id === id); 
+    
+    if(!loggedCustomer){ 
+        alert("Please login first to add items to the cart!"); 
+        showPage('loginForm'); 
+        toggleAuthForm('login'); 
+        return; 
+    }
+
+    if(!product || product.stock < 1){ 
+        alert("Out of stock or product not found."); 
+        return; 
+    }
+
+    // কার্টে প্রোডাক্টটি আছে কিনা দেখুন
+    const exist=cart.find(item=>item.id===product.id);
+    if(exist){ 
+         if((exist.quantity||1)>=product.stock){ 
+             alert(`Maximum stock reached for ${product.name} (${product.stock} units).`); 
+             return; 
+         } 
+         exist.quantity=(exist.quantity||1)+1; 
+     } else{ 
+         // নতুন আইটেম যোগ করা 
+         cart.push({...product, quantity:1}); 
+     }
+     localStorage.setItem("cart",JSON.stringify(cart)); 
+     renderCart(); 
+     updateCartBadge(); // ব্যাজ আপডেট
+     alert(`${product.name} added to cart!`);
+}
+
+
+function renderCart(){
+    cartList.innerHTML=''; 
+    if(cart.length===0){ 
+        cartList.innerHTML="<p>Your cart is empty.</p>"; 
+        document.getElementById('promoCodeInput').style.display = 'none';
+        document.querySelector('#cart button[onclick="applyPromo()"]').style.display = 'none';
+        document.getElementById('promoResult').innerText = '';
+        return; 
+    }
+    
+    document.getElementById('promoCodeInput').style.display = 'block';
+    document.querySelector('#cart button[onclick="applyPromo()"]').style.display = 'block';
+
+    cart.forEach((p,i)=>{
+        const div=document.createElement('div'); div.className='product';
+        const qty=p.quantity||1;
+        // স্টক খুঁজে বের করুন রিমুভ করার আগে
+        const productData = products.find(pr=>pr.id===p.id) || p; 
+        const maxStock = productData.stock;
+
+        div.innerHTML=`<p><b>${p.name}</b></p>
+        <p>$${p.price.toFixed(2)} x ${qty} = $<b>${(p.price*qty).toFixed(2)}</b></p>
+        <input type="number" value="${qty}" min="1" max="${maxStock}" onchange="updateQuantity(${i},this.value)">
+        <button onclick="removeFromCart(${i})">Remove</button>`;
+        cartList.appendChild(div);
+    });
+    updateCartTotal(); 
+    updateCartBadge();
+}
+
+function removeFromCart(i){ 
+    cart.splice(i,1); 
+    localStorage.setItem("cart",JSON.stringify(cart)); 
+    appliedPromo = null; // Remove promo if cart changes
+    document.getElementById('promoResult').innerText = '';
+    renderCart(); 
+}
+
+function updateQuantity(i,val){ 
+    const quantity=Number(val); 
+    if(quantity<1 || isNaN(quantity)) return; 
+    const p=cart[i]; 
+    const stockP=products.find(pr=>pr.id===p.id); 
+    
+    if(stockP && quantity>stockP.stock){ 
+        alert(`Maximum available stock is ${stockP.stock}.`); 
+        cart[i].quantity=stockP.stock; 
+    } else{ 
+        cart[i].quantity=quantity; 
+    } 
+    
+    localStorage.setItem("cart",JSON.stringify(cart)); 
+    appliedPromo = null; // Remove promo if cart changes
+    document.getElementById('promoResult').innerText = '';
+    updateCartTotal(); 
+}
+
+function updateCartTotal(){ 
+    let subtotal=cart.reduce((sum,p)=>sum+p.price*(p.quantity||1),0);
+    let finalTotal = subtotal;
+    let discount = 0;
+
+    if (appliedPromo) {
+        if (appliedPromo.minOrder > subtotal) {
+             document.getElementById('promoResult').innerText = `❌ Subtotal ($${subtotal.toFixed(2)}) is less than minimum order for ${appliedPromo.code} ($${appliedPromo.minOrder.toFixed(2)})`;
+             appliedPromo = null;
+        } else {
+             if (appliedPromo.type === 'percent') {
+                 discount = subtotal * (appliedPromo.discount / 100);
+             } else if (appliedPromo.type === 'fixed') {
+                 discount = appliedPromo.discount;
+             }
+             finalTotal = subtotal - discount;
+             document.getElementById('promoResult').innerText = `✅ Promo ${appliedPromo.code} applied! Discount: $${discount.toFixed(2)}`;
+        }
+    }
+
+    document.getElementById('cartSummary').innerHTML=`
+        Subtotal: $${subtotal.toFixed(2)}<br>
+        Discount: $${discount.toFixed(2)}<br>
+        <b>Final Total: $${finalTotal.toFixed(2)}</b>
+    `;
+}
+
+function updateCartBadge(){ cartLink.setAttribute('data-count',cart.length); }
+
+// ==== CAROUSEL (Admin Controlled) - UNCHANGED ====
+let currentSlide = 0;
+let carouselInterval;
+
+function renderCarousel() {
+    const track = document.querySelector('#carousel .carousel-track');
+    track.innerHTML = '';
+    if (banners.length === 0) {
+        track.innerHTML = '<div class="carousel-slide" style="text-align:center; display:flex; justify-content:center; align-items:center;"><h3>No active banners.</h3></div>';
+        return;
+    }
+    
+    banners.forEach(banner => {
+        const slide = document.createElement('div');
+        slide.className = 'carousel-slide';
+        slide.innerHTML = `<a href="${banner.link}"><img src="${banner.imageURL}" alt="Promotion Banner"></a>`;
+        track.appendChild(slide);
+    });
+    track.style.transform = `translateX(0%)`;
+}
+
+function moveCarousel() {
+    const track = document.querySelector('#carousel .carousel-track');
+    const totalSlides = banners.length;
+    if (totalSlides <= 1) return;
+
+    currentSlide = (currentSlide + 1) % totalSlides;
+    track.style.transform = `translateX(-${currentSlide * 100}%)`;
+}
+
+function startCarousel() {
+    renderCarousel();
+    if (banners.length > 1) {
+        clearInterval(carouselInterval);
+        currentSlide = 0;
+        carouselInterval = setInterval(moveCarousel, 5000); // Change slide every 5 seconds
+    } else {
+        clearInterval(carouselInterval); // Stop interval if 0 or 1 banner
+    }
+}
+
+
+// ==== CATEGORY/FILTER (UNCHANGED) ====
+function filterCategory(){
+    let filtered=products; 
+    const cat=document.getElementById('categoryFilter').value;
+    const search=document.getElementById('searchInput').value.toLowerCase();
+    const sort=document.getElementById('sortSelect').value;
+    
+    if(cat!=='All'){ filtered=filtered.filter(p=>p.category===cat); }
+    if(search){ filtered=filtered.filter(p=>p.name.toLowerCase().includes(search)); }
+    
+    if(sort==='price-asc'){ filtered.sort((a,b)=>a.price-b.price); }
+    if(sort==='price-desc'){ filtered.sort((a,b)=>b.price-a.price); }
+    if(sort==='name-asc'){ filtered.sort((a,b)=>a.name.localeCompare(b.name)); }
+    if(sort==='name-desc'){ filtered.sort((a,b)=>b.name.localeCompare(a.name)); }
+    
+    renderProducts(categoryList, filtered);
+}
+
+function populateCategoryFilter(){ 
+    const categories=[...new Set(products.map(p=>p.category))]; 
+    const filter=document.getElementById('categoryFilter'); 
+    filter.innerHTML='<option value="All">All</option>'; 
+    categories.forEach(c=>{ 
+        const opt=document.createElement('option'); 
+        opt.value=c; 
+        opt.textContent=c; 
+        filter.appendChild(opt); 
+    }); 
+}
+
+// ==== PROMOCODE LOGIC (UNCHANGED) ====
+function applyPromo(){
+    const code=document.getElementById('promoCodeInput').value.trim().toUpperCase();
+    document.getElementById('promoResult').innerText = ''; // Reset result
+    
+    if(!code){ alert("Enter promo code"); return; }
+    if(cart.length === 0) { alert("Add items to cart first."); return; }
+
+    const promo = masterPromocodes.find(p => p.code === code);
+    
+    if(!promo){ 
+        document.getElementById('promoResult').innerText = "❌ Invalid promo code."; 
+        appliedPromo = null;
+        updateCartTotal();
+        return; 
+    }
+    
+    // Check Scope (Global or Vendor Specific)
+    let isApplicable = true;
+    if (promo.scope === 'vendor') {
+        // Check if at least one cart item is from the promo's vendor
+        const vendorProductsInCart = cart.filter(citem => {
+            const product = products.find(p => p.id === citem.id);
+            return product && product.vendorId === promo.vendorId;
+        });
+        if (vendorProductsInCart.length === 0) {
+            isApplicable = false;
+        }
+    }
+    
+    if (!isApplicable) {
+        document.getElementById('promoResult').innerText = `❌ Promo ${code} is only valid for specific products/vendors.`;
+        appliedPromo = null;
+        updateCartTotal();
+        return;
+    }
+
+    // Apply the valid promo
+    appliedPromo = promo;
+    updateCartTotal(); // This will recalculate total and check minOrder
+}
+
+// ==== CHECKOUT (UNCHANGED) ====
+function checkout(){
+    if(cart.length===0){ alert("Cart empty"); return; }
+    if(!loggedCustomer){ alert("Login to checkout"); return; }
+    
+    let subtotal=cart.reduce((sum,p)=>sum+p.price*(p.quantity||1),0);
+    let finalTotal = subtotal;
+    let discount = 0;
+    
+    // Final Promo Check
+    if (appliedPromo) {
+             if (appliedPromo.minOrder > subtotal) {
+                alert("Checkout failed: Minimum order requirement not met for the applied promo code.");
+                return;
+        }
+        if (appliedPromo.type === 'percent') {
+                 discount = subtotal * (appliedPromo.discount / 100);
+        } else if (appliedPromo.type === 'fixed') {
+                 discount = appliedPromo.discount;
+        }
+        finalTotal = subtotal - discount;
+        
+        // Update Promocode Usage (for Admin panel tracking)
+        let usage = JSON.parse(localStorage.getItem("promocodeUsage")||'{}');
+        usage[appliedPromo.code] = (usage[appliedPromo.code] || 0) + 1;
+        localStorage.setItem("promocodeUsage", JSON.stringify(usage));
+    }
+
+    // 1. Stock Validation
+    let outOfStockItems = [];
+    cart.forEach(citem => {
+        const p = products.find(pr=>pr.id===citem.id);
+        if (p && p.stock < citem.quantity) {
+            outOfStockItems.push(`${p.name} (Available: ${p.stock})`);
+        }
+    });
+
+    if (outOfStockItems.length > 0) {
+        alert(`Checkout Failed! Some items are out of stock or quantity exceeds stock:\n- ${outOfStockItems.join('\n- ')}\nPlease adjust your cart.`);
+        renderAll(); // Re-render to show updated stock
+        return;
+    }
+    
+    // 2. Update Stock
+    cart.forEach(citem=>{ 
+        const pidx=products.findIndex(pr=>pr.id===citem.id); 
+        if(pidx!==-1){ 
+            products[pidx].stock-=citem.quantity||1; 
+        } 
+    });
+    localStorage.setItem("products",JSON.stringify(products));
+
+    // 3. Record Order (Optional but good for prototype)
+    const orders = JSON.parse(localStorage.getItem('orders') || '[]');
+    orders.push({
+        id: orders.length + 1,
+        customer: loggedCustomer.username,
+        items: cart,
+        total: finalTotal.toFixed(2),
+        discount: discount.toFixed(2),
+        promocode: appliedPromo ? appliedPromo.code : 'None',
+        status: 'Pending', // Add status for admin panel
+        date: new Date().toISOString()
+    });
+    localStorage.setItem('orders', JSON.stringify(orders));
+
+    // 4. Clear Cart
+    cart=[]; 
+    localStorage.setItem("cart",JSON.stringify(cart)); 
+    appliedPromo = null;
+    document.getElementById('promoResult').innerText = '';
+    
+    // 5. Send WhatsApp Message (Final Confirmation)
+    const orderDetails = cart.map(item => `${item.name} (${item.quantity} units)`).join(', ');
+    const message = `Order Placed!%0AUser: ${loggedCustomer.username}%0AItems: ${orderDetails}%0ATotal: $${finalTotal.toFixed(2)}%0AAddress: ${loggedCustomer.address}`;
+    // এখানে আপনার WhatsApp নাম্বারটি পরিবর্তন করুন
+    window.open(`https://wa.me/8801XXXXXXXXX?text=${message}`, "_blank");
+
+
+    alert(`Order placed successfully! Final Total: $${finalTotal.toFixed(2)}`);
+    showPage('home'); // Go back to home
+}
+
+// ==== REVIEWS (UNCHANGED) ====
+let currentRating = 0;
+
+function renderStarRatingForm() {
+    const ratingDiv = document.getElementById('ratingStars');
+    ratingDiv.innerHTML = '';
+    for (let i = 1; i <= 5; i++) {
+        const star = document.createElement('span');
+        star.className = 'star';
+        star.innerText = '★';
+        star.dataset.value = i;
+        star.onclick = () => { currentRating = i; highlightStars(i); };
+        ratingDiv.appendChild(star);
+    }
+    highlightStars(currentRating);
+}
+
+function highlightStars(rating) {
+    document.querySelectorAll('#ratingStars .star').forEach(star => {
+        star.style.color = star.dataset.value <= rating ? 'gold' : 'gray';
+    });
+}
+
+function renderReviews() {
+    const reviewList = document.getElementById('reviewList');
+    reviewList.innerHTML = '';
+
+    reviews = JSON.parse(localStorage.getItem("reviews")||'[]');
+
+    if (reviews.length === 0) {
+        reviewList.innerHTML = '<p style="text-align: center;">No reviews yet. Be the first!</p>';
+        return;
+    }
+
+    reviews.slice(-5).reverse().forEach(r => { // Show last 5 reviews
+        const div = document.createElement('div');
+        div.className = 'review-item';
+        div.innerHTML = `
+            <div>${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</div>
+            <p>${r.text}</p>
+            <p class="review-customer">Reviewed by <b>${r.customerName}</b> on ${r.date}</p>
+        `;
+        reviewList.appendChild(div);
+    });
+    
+    // Show/hide review form based on login status
+    if (loggedCustomer) {
+        document.getElementById('reviewText').style.display = 'block';
+        document.querySelector('#reviewForm button').style.display = 'block';
+        document.getElementById('reviewAuthMsg').style.display = 'none';
+        document.getElementById('ratingStars').style.display = 'block';
+    } else {
+        document.getElementById('reviewText').style.display = 'none';
+        document.querySelector('#reviewForm button').style.display = 'none';
+        document.getElementById('reviewAuthMsg').style.display = 'block';
+        document.getElementById('ratingStars').style.display = 'none';
+    }
+}
+
+function submitReview(){ 
+    if(!loggedCustomer){ alert("Login to submit review."); return; }
+    
+    const text=document.getElementById("reviewText").value.trim();
+    if(currentRating === 0 || !text){ 
+        alert("Please provide a rating (1-5 stars) and review text."); 
+        return; 
+    }
+    
+    reviews.push({
+        id: reviews.length + 1,
+        customerName: loggedCustomer.username,
+        rating: currentRating,
+        text: text,
+        date: new Date().toLocaleDateString()
+    });
+    localStorage.setItem("reviews",JSON.stringify(reviews));
+    
+    document.getElementById("reviewText").value = '';
+    currentRating = 0;
+    highlightStars(0);
+    renderReviews();
+    alert("Review submitted successfully!");
+}
+
+
+// ==== MISC ====
+function openWhatsApp(){ 
+    // এখানে আপনার WhatsApp নাম্বারটি পরিবর্তন করুন
+    window.open("https://wa.me/8801XXXXXXXXX?text=Hello%20Dhamaka%2C%20I%20need%20support%20regarding%20my%20order.", "_blank"); 
+}
+</script>
+</body>
+</html>
