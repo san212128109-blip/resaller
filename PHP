@@ -1,38 +1,511 @@
-// database/migrations/xxxx_add_role_to_users_table.php
-Schema::table('users', function (Blueprint $table) {
-    $table->string('role')->default('reseller'); // admin or reseller
-});
-
-// database/migrations/xxxx_create_products_table.php
-Schema::create('products', function (Blueprint $table) {
-    $table->id();
-    $table->foreignId('user_id')->constrained()->onDelete('cascade');
-    $table->string('name');
-    $table->text('description');
-    $table->decimal('price', 10, 2);
-    $table->enum('status', ['pending', 'approved'])->default('pending'); 
-    $table->timestamps();
-});<!DOCTYPE html>
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-    <title>Add Product</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
     <style>
-        .container { width: 400px; margin: auto; }
-        input, textarea { width: 100%; padding: 10px; margin: 10px 0; }
-        button { padding: 10px 20px; background: darkblue; color: white; border: none; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background: #f4f4f4; color: #333; }
+        .dashboard-container { display: flex; min-height: 100vh; }
+        .sidebar { width: 200px; background: #2c3e50; color: white; padding: 20px; box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1); }
+        .sidebar h2 { margin-top: 0; color: #1abc9c; border-bottom: 2px solid #34495e; padding-bottom: 10px; }
+        .sidebar nav a { display: block; padding: 10px 0; color: white; text-decoration: none; border-radius: 5px; transition: background 0.3s; margin-bottom: 5px; }
+        .sidebar nav a:hover, .sidebar nav a.active { background: #34495e; }
+        .main-content { flex-grow: 1; padding: 20px; background: white; }
+        .header { background: #3498db; color: white; padding: 15px; margin: -20px -20px 20px -20px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); display: flex; justify-content: space-between; align-items: center; }
+        h1 { margin: 0; }
+        
+        .page { display: none; }
+        h2 { border-bottom: 2px solid #ccc; padding-bottom: 10px; margin-top: 20px; }
+
+        /* Table Styles */
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #3498db; color: white; }
+        button { padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; margin-right: 5px; transition: background 0.3s; color: white; }
+        button.approve { background: #27ae60; }
+        button.reject { background: #e74c3c; }
+        button.delete { background: #c0392b; }
+        .action-btn { background: #28a745; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; transition: background 0.3s; margin-right: 5px; }
+        .action-btn:hover { background: #1e7e34; }
+        
+        /* Status Tags */
+        .status-pending { color: orange; font-weight: bold; }
+        .status-approved { color: #27ae60; font-weight: bold; }
+        .status-rejected { color: #e74c3c; font-weight: bold; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h2>Add a New Product</h2>
-        <form method="POST">
-            <input type="text" name="name" placeholder="Product Name" required>
-            <input type="text" name="price" placeholder="Price (e.g. 500)" required>
-            <textarea name="details" placeholder="Product Details" rows="4" required></textarea>
-            <button type="submit">Save Product</button>
-        </form>
-        <br>
-        <a href="{{ url_for('index') }}">Back to Home</a>
+
+<div class="dashboard-container">
+    <div class="sidebar">
+        <h2>Admin Panel</h2>
+        <nav>
+            <a href="#" onclick="showPage('dashboard')" id="nav-dashboard" class="active">Dashboard</a>
+            <a href="#" onclick="showPage('vendors')" id="nav-vendors">Vendors</a>
+            <a href="#" onclick="showPage('products')" id="nav-products">Products</a>
+            <a href="#" onclick="showPage('orders')" id="nav-orders">Orders</a>
+            <a href="#" onclick="showPage('promocodes')" id="nav-promocodes">Promocodes</a>
+            <a href="#" onclick="showPage('banners')" id="nav-banners">Banners</a>
+            <a href="#" onclick="showPage('customers')" id="nav-customers">Customers</a>
+            <a href="#" onclick="logout()">Logout</a>
+        </nav>
     </div>
+
+    <div class="main-content">
+        <div class="header">
+            <h1>Admin Dashboard</h1>
+            <a href="vendor.html" style="color:white;">View Vendor Panel</a>
+        </div>
+
+        <div id="dashboardPage" class="page">
+            <h2>System Overview</h2>
+            <p>Welcome back, Admin. Use the sidebar to manage your marketplace.</p>
+        </div>
+
+        <div id="vendorsPage" class="page">
+            <h2>Vendor Approvals & Management</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>WhatsApp</th>
+                        <th>Status</th>
+                        <th>Promo Code</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="vendorTableBody">
+                    </tbody>
+            </table>
+        </div>
+
+        <div id="productsPage" class="page">
+            <h2>Product Approvals & Management</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Status</th>
+                        <th>Name</th>
+                        <th>Vendor</th>
+                        <th>Price</th>
+                        <th>Stock</th>
+                        <th>Category</th>
+                        <th>Assigned Promo</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="productTableBody">
+                    </tbody>
+            </table>
+        </div>
+
+        <div id="ordersPage" class="page">
+            <h2>Order Management</h2>
+            <p>Order listing and status update features go here.</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Order ID</th>
+                        <th>Customer</th>
+                        <th>Total</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="orderTableBody">
+                    <tr><td colspan="5">No Orders Found (Feature Not Fully Implemented)</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div id="promocodesPage" class="page">
+            <h2>Global Promocode Management</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Code</th>
+                        <th>Discount</th>
+                        <th>Scope</th>
+                        <th>Min Order</th>
+                        <th>Expiry</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="promocodeTableBody">
+                    </tbody>
+            </table>
+        </div>
+
+        <div id="bannersPage" class="page">
+            <h2>Banner & Slider Management</h2>
+            <p>Interface to upload/manage website banners and promotional sliders goes here.</p>
+            
+            <div id="bannerFormContainer" style="max-width: 600px; margin: 20px 0; padding: 20px; border: 1px solid #ccc; border-radius: 8px; background: #fff;">
+                <h3>Add New Banner</h3>
+                
+                <label for="bannerImageURL" style="display: block; margin-bottom: 5px;">Image URL</label>
+                <input type="text" id="bannerImageURL" placeholder="e.g., https://example.com/images/banner.jpg" style="width: 100%; padding: 8px; margin-bottom: 10px; box-sizing: border-box;" required>
+
+                <label for="bannerLink" style="display: block; margin-bottom: 5px;">Link URL</label>
+                <input type="text" id="bannerLink" placeholder="e.g., #categories or full URL" style="width: 100%; padding: 8px; margin-bottom: 15px; box-sizing: border-box;" required>
+
+                <button class="action-btn" onclick="addBanner()" style="background: #27ae60;">Add Banner</button>
+            </div>
+
+            <h3 style="margin-top: 30px;">Active Banners (Total: <span id="bannerCount">0</span>)</h3>
+            <table id="bannerTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Image Preview</th>
+                        <th>Image URL</th>
+                        <th>Link Target</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="bannerTableBody">
+                    </tbody>
+            </table>
+        </div>
+        <div id="customersPage" class="page">
+            <h2>Customer List</h2>
+            <p>List of all registered customer accounts goes here (e.g., name, phone, email).</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Phone</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="customerTableBody">
+                    <tr><td colspan="4">No Customers Found (Feature Not Fully Implemented)</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+// ===== GLOBAL STATE & DATA LOAD (Robust Loading) =====
+let vendors = [];
+let products = [];
+let masterPromocodes = [];
+let banners = []; // ⭐ NEW: Banner array
+let currentAdmin = JSON.parse(localStorage.getItem('currentAdmin')||'null'); 
+
+function loadData() {
+    vendors = JSON.parse(localStorage.getItem("vendors")||'[]');
+    products = JSON.parse(localStorage.getItem("products")||'[]');
+    masterPromocodes = JSON.parse(localStorage.getItem("masterPromocodes")||'[]');
+    banners = JSON.parse(localStorage.getItem("banners")||'[]'); // ⭐ NEW: Load Banners
+    
+    // Initialize other models if needed
+    if (!localStorage.getItem('customers')) localStorage.setItem('customers', JSON.stringify([]));
+    if (!localStorage.getItem('orders')) localStorage.setItem('orders', JSON.stringify([]));
+
+    // Initialize default banners if none exist (for testing the shop)
+    if (banners.length === 0) {
+        banners = [
+            { id: 1, imageURL: 'https://via.placeholder.com/1200x400/3498db/ffffff?text=E-commerce+Banner+1', link: '#products' },
+            { id: 2, imageURL: 'https://via.placeholder.com/1200x400/2ecc71/ffffff?text=Summer+Sale+20%25+OFF', link: '#promocodes' }
+        ];
+        localStorage.setItem('banners', JSON.stringify(banners));
+    }
+}
+
+// Helper: Get Vendor Name
+function getVendorName(vendorId) {
+    const vendor = vendors.find(v => v.id === vendorId);
+    return vendor ? vendor.name : 'N/A';
+}
+
+// ===== INIT & PAGE SWITCHING (MAIN LOGIC) =====
+function showPage(page) {
+    loadData(); 
+
+    document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
+    document.querySelectorAll('.sidebar nav a').forEach(a => a.classList.remove('active'));
+
+    const targetPage = document.getElementById(page + 'Page');
+    const targetNav = document.getElementById('nav-' + page);
+    
+    if (targetPage) {
+        targetPage.style.display = 'block';
+        if (targetNav) {
+            targetNav.classList.add('active');
+        }
+    } else {
+        console.error(`Page element with ID '${page}Page' not found.`);
+        return; 
+    }
+
+    // Call specific rendering functions for the active page
+    if (page === 'vendors') {
+        renderVendorsTable();
+    } else if (page === 'products') {
+        renderProductsTable(); 
+    } else if (page === 'promocodes') {
+        renderPromocodesTable();
+    } else if (page === 'banners') { // ⭐ NEW: Call render function for Banners
+        renderBannersTable();
+    }
+    // Orders, Customers are placeholders, no specific rendering function called here yet.
+}
+
+
+function initRender() {
+    loadData();
+    showPage('dashboard');
+}
+
+document.addEventListener('DOMContentLoaded', initRender);
+
+function logout(){
+    alert("Admin Logout (Simulated)");
+}
+
+// ====== VENDORS (CRUD) ======
+function renderVendorsTable() {
+    const tbody = document.getElementById("vendorTableBody");
+    tbody.innerHTML = "";
+
+    vendors.forEach((v, i) => {
+        const statusClass = v.status ? 'status-' + v.status.toLowerCase() : 'status-pending';
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td>${v.id}</td>
+            <td>${v.name}</td>
+            <td>${v.whatsapp || 'N/A'}</td>
+            <td><span class="${statusClass}">${v.status}</span></td>
+            <td>${v.promocode || 'None'}</td>
+            <td>
+                ${v.status !== 'Approved' ? `<button class="approve" onclick="approveVendor('${v.id}')">Approve</button>` : ""}
+                ${v.status !== 'Rejected' ? `<button class="reject" onclick="rejectVendor('${v.id}')">Reject</button>` : ""}
+                <button class="delete" onclick="deleteVendor('${v.id}')">Delete</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function approveVendor(vendorId) {
+    const vendorIndex = vendors.findIndex(v => v.id === vendorId);
+    if (vendorIndex !== -1) {
+        vendors[vendorIndex].status = 'Approved';
+        localStorage.setItem('vendors', JSON.stringify(vendors));
+        renderVendorsTable();
+        alert(`Vendor ${vendors[vendorIndex].name} Approved.`);
+    }
+}
+
+function rejectVendor(vendorId) {
+    const vendorIndex = vendors.findIndex(v => v.id === vendorId);
+    if (vendorIndex !== -1) {
+        vendors[vendorIndex].status = 'Rejected';
+        localStorage.setItem('vendors', JSON.stringify(vendors));
+        renderVendorsTable();
+        alert(`Vendor ${vendors[vendorIndex].name} Rejected.`);
+    }
+}
+
+function deleteVendor(vendorId) {
+    if (confirm(`Are you sure you want to delete vendor ${vendorId} and all their data?`)) {
+        // Remove vendor
+        vendors = vendors.filter(v => v.id !== vendorId);
+        // Remove their products
+        products = products.filter(p => p.vendorId !== vendorId);
+        // Remove their specific promocode
+        masterPromocodes = masterPromocodes.filter(p => !(p.scope === 'vendor' && p.vendorId === vendorId));
+
+        localStorage.setItem('vendors', JSON.stringify(vendors));
+        localStorage.setItem('products', JSON.stringify(products));
+        localStorage.setItem('masterPromocodes', JSON.stringify(masterPromocodes));
+        renderVendorsTable();
+        alert(`Vendor ${vendorId} and related data deleted.`);
+    }
+}
+
+// ====== PRODUCTS APPROVAL (FIXED) ======
+function renderProductsTable(){
+    const tbody = document.querySelector("#productTableBody");
+    tbody.innerHTML="";
+    
+    // Sort products to show Pending ones first
+    const sortedProducts = products.sort((a, b) => {
+        if (a.status === 'Pending' && b.status !== 'Pending') return -1;
+        if (a.status !== 'Pending' && b.status === 'Pending') return 1;
+        return 0;
+    });
+
+    sortedProducts.forEach((p,i)=>{
+        const vendorName = getVendorName(p.vendorId);
+        const statusClass = p.status ? 'status-' + p.status.toLowerCase() : 'status-pending';
+        // Find global index for the product (needed for delete/update)
+        const globalIndex = products.findIndex(pr => pr.id === p.id); 
+
+        const tr=document.createElement("tr");
+        tr.innerHTML=`
+            <td><span class="${statusClass}">${p.status}</span></td>
+            <td>${p.name}</td>
+            <td>${vendorName}</td>
+            <td>$${p.price.toFixed(2)}</td>
+            <td>${p.stock}</td>
+            <td>${p.category}</td>
+            <td>${p.promoCodeAssigned || 'None'}</td>
+            <td>
+                ${p.status!=='Approved'?`<button class="approve" onclick="approveProduct(${globalIndex})">Approve</button>`:""}
+                ${p.status!=='Rejected'?`<button class="reject" onclick="rejectProduct(${globalIndex})">Reject</button>`:""}
+                <button class="delete" onclick="deleteProduct(${globalIndex})">Delete</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function approveProduct(index) {
+    products[index].status = 'Approved';
+    localStorage.setItem('products', JSON.stringify(products));
+    renderProductsTable();
+    alert(`Product ${products[index].name} Approved.`);
+}
+
+function rejectProduct(index) {
+    products[index].status = 'Rejected';
+    localStorage.setItem('products', JSON.stringify(products));
+    renderProductsTable();
+    alert(`Product ${products[index].name} Rejected.`);
+}
+
+function deleteProduct(index) {
+    if (confirm(`Are you sure you want to delete product ${products[index].name}?`)) {
+        products.splice(index, 1);
+        localStorage.setItem('products', JSON.stringify(products));
+        renderProductsTable();
+        alert(`Product deleted.`);
+    }
+}
+
+// ====== PROMOCODES (CRUD) ======
+function renderPromocodesTable() {
+    const tbody = document.getElementById("promocodeTableBody");
+    tbody.innerHTML = "";
+
+    masterPromocodes.forEach((p, i) => {
+        const scopeDetail = p.scope === 'vendor' ? `Vendor: ${getVendorName(p.vendorId)}` : 'Global';
+        const discountDisplay = p.type === 'percent' ? `${p.discount}%` : `$${p.discount}`;
+        const tr = document.createElement("tr");
+
+        tr.innerHTML = `
+            <td>${p.code}</td>
+            <td>${discountDisplay}</td>
+            <td>${scopeDetail}</td>
+            <td>$${p.minOrder.toFixed(2)}</td>
+            <td>${p.expiry}</td>
+            <td>
+                ${p.scope !== 'vendor' ? `<button class="delete" onclick="deletePromocode(${i})">Delete</button>` : `<span style="color:gray;">Vendor Code</span>`}
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function deletePromocode(index) {
+    if (masterPromocodes[index].scope === 'vendor') {
+        alert("Cannot delete vendor-specific promo codes from here. Delete the entire vendor instead.");
+        return;
+    }
+    if (confirm(`Are you sure you want to delete global promocode ${masterPromocodes[index].code}?`)) {
+        masterPromocodes.splice(index, 1);
+        localStorage.setItem('masterPromocodes', JSON.stringify(masterPromocodes));
+        renderPromocodesTable();
+        alert(`Promocode deleted.`);
+    }
+}
+
+
+// ⭐ ====== BANNER MANAGEMENT FUNCTIONS (NEW) ======
+function renderBannersTable() {
+    const tbody = document.getElementById('bannerTableBody');
+    const countSpan = document.getElementById('bannerCount');
+    tbody.innerHTML = '';
+
+    if (banners.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No active banners found.</td></tr>';
+        countSpan.innerText = 0;
+        return;
+    }
+
+    banners.forEach(b => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${b.id}</td>
+            <td>
+                <img src="${b.imageURL}" alt="Banner Preview" style="width: 150px; height: 50px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd;" onerror="this.onerror=null;this.src='https://via.placeholder.com/150x50?text=Image+Error';">
+            </td>
+            <td style="font-size: 0.8em; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${b.imageURL}">${b.imageURL}</td>
+            <td>${b.link}</td>
+            <td>
+                <button class="delete" onclick="deleteBanner('${b.id}')">Delete</button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+    
+    countSpan.innerText = banners.length;
+}
+
+function addBanner() {
+    const url = document.getElementById('bannerImageURL').value.trim();
+    const link = document.getElementById('bannerLink').value.trim();
+
+    if (!url || !link) {
+        alert("Both Image URL and Link URL are required.");
+        return;
+    }
+
+    const newBanner = {
+        // Generate a simple unique ID
+        id: banners.length > 0 ? Math.max(...banners.map(b => b.id)) + 1 : 1, 
+        imageURL: url,
+        link: link
+    };
+
+    banners.push(newBanner);
+    localStorage.setItem('banners', JSON.stringify(banners));
+    
+    // রিসেট ইনপুট
+    document.getElementById('bannerImageURL').value = '';
+    document.getElementById('bannerLink').value = '';
+    
+    alert('Banner added successfully and is now live on the shop.');
+    renderBannersTable();
+}
+
+function deleteBanner(id) {
+    // Convert id to the correct type (numeric if generated as number)
+    const bannerId = parseInt(id); 
+    
+    if (!confirm("Are you sure you want to delete this banner?")) return;
+
+    const initialLength = banners.length;
+    banners = banners.filter(b => b.id !== bannerId);
+
+    if (banners.length < initialLength) {
+        localStorage.setItem('banners', JSON.stringify(banners));
+        alert('Banner deleted.');
+        renderBannersTable();
+    } else {
+        alert("Error: Banner not found.");
+    }
+}
+// ⭐ ====== END BANNER MANAGEMENT FUNCTIONS ======
+
+
+// NOTE: Orders and Customers pages are placeholders, you need to add full implementation logic if required.
+</script>
 </body>
 </html>
