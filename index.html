@@ -314,5 +314,71 @@
    314	function logout(){ 
    315	    loggedCustomer=null; 
    316	    localStorage.removeItem("loggedCustomer"); 
-   317	    cart = [];
-   318	    localStorage.<response clipped><NOTE>Due to the max output limit, only part of this file has been shown to you. You should retry this tool after you have searched inside the file with `grep -n` in order to find the line numbers of what you are looking for.</NOTE>
+   317	    cacart = [];
+    localStorage.setItem("cart", JSON.stringify(cart));
+    updateNavLinks();
+    showPage('loginForm');
+}
+
+// ==== CHECKOUT & ORDER MANAGEMENT (NEW) ====
+function checkout() {
+    if (cart.length === 0) {
+        alert("Your cart is empty!");
+        return;
+    }
+    
+    if (!loggedCustomer) {
+        alert("Please login to checkout.");
+        showPage('loginForm');
+        return;
+    }
+    
+    let total = calculateTotal();
+    if (appliedPromo) {
+        total = applyPromoDiscount(total);
+    }
+    
+    // Create order object
+    const order = {
+        id: Date.now(),
+        customerName: loggedCustomer.username,
+        customerWhatsapp: loggedCustomer.whatsapp,
+        customerAddress: loggedCustomer.address,
+        items: [...cart],
+        total: total,
+        status: 'Pending',
+        date: new Date().toLocaleString(),
+        vendorId: cart[0].vendorId // Simplified: using first product's vendor
+    };
+    
+    // Save order to localStorage
+    let orders = JSON.parse(localStorage.getItem('orders') || '[]');
+    orders.push(order);
+    localStorage.setItem('orders', JSON.stringify(orders));
+    
+    // Clear cart
+    cart = [];
+    localStorage.setItem('cart', JSON.stringify(cart));
+    appliedPromo = null;
+    
+    alert('Order placed successfully! Your order ID is #' + order.id + '\n\nWe will contact you soon via WhatsApp.');
+    showPage('home');
+    renderAll();
+}
+
+function calculateTotal() {
+    return cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+}
+
+function applyPromoDiscount(total) {
+    if (!appliedPromo) return total;
+    
+    if (appliedPromo.type === 'percent') {
+        return total - (total * appliedPromo.discount / 100);
+    } else {
+        return total - appliedPromo.discount;
+    }
+}
+</script>
+</body>
+</html>

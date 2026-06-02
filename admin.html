@@ -103,20 +103,40 @@
 
         <div id="ordersPage" class="page">
             <h2>Order Management</h2>
-            <p>Order listing and status update features go here.</p>
+            <div style="display: flex; gap: 15px; margin-bottom: 20px;">
+                <div style="background: #3498db; color: white; padding: 15px; border-radius: 8px; flex: 1; text-align: center;">
+                    <h3 style="margin: 0;">Total Orders</h3>
+                    <p id="totalOrdersCount" style="font-size: 2em; margin: 10px 0;">0</p>
+                </div>
+                <div style="background: #f39c12; color: white; padding: 15px; border-radius: 8px; flex: 1; text-align: center;">
+                    <h3 style="margin: 0;">Pending</h3>
+                    <p id="pendingOrdersCount" style="font-size: 2em; margin: 10px 0;">0</p>
+                </div>
+                <div style="background: #27ae60; color: white; padding: 15px; border-radius: 8px; flex: 1; text-align: center;">
+                    <h3 style="margin: 0;">Completed</h3>
+                    <p id="completedOrdersCount" style="font-size: 2em; margin: 10px 0;">0</p>
+                </div>
+                <div style="background: #e74c3c; color: white; padding: 15px; border-radius: 8px; flex: 1; text-align: center;">
+                    <h3 style="margin: 0;">Cancelled</h3>
+                    <p id="cancelledOrdersCount" style="font-size: 2em; margin: 10px 0;">0</p>
+                </div>
+            </div>
+            
             <table>
                 <thead>
                     <tr>
                         <th>Order ID</th>
                         <th>Customer</th>
+                        <th>Products</th>
                         <th>Total</th>
                         <th>Status</th>
+                        <th>Vendor</th>
+                        <th>Date</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody id="orderTableBody">
-                    <tr><td colspan="5">No Orders Found (Feature Not Fully Implemented)</td></tr>
-                </tbody>
+                    </tbody>
             </table>
         </div>
 
@@ -252,8 +272,11 @@ function showPage(page) {
         renderPromocodesTable();
     } else if (page === 'banners') { // ⭐ NEW: Call render function for Banners
         renderBannersTable();
+    } else if (page === 'orders') { // ⭐ NEW: Call render function for Orders
+        renderOrdersTable();
+    } else if (page === 'customers') { // ⭐ NEW: Call render function for Customers
+        renderCustomersTable();
     }
-    // Orders, Customers are placeholders, no specific rendering function called here yet.
 }
 
 
@@ -504,8 +527,123 @@ function deleteBanner(id) {
 }
 // ⭐ ====== END BANNER MANAGEMENT FUNCTIONS ======
 
+// ⭐ ====== ORDER MANAGEMENT FUNCTIONS ======
+let orders = [];
 
-// NOTE: Orders and Customers pages are placeholders, you need to add full implementation logic if required.
+function renderOrdersTable() {
+    loadData();
+    orders = JSON.parse(localStorage.getItem('orders') || '[]');
+    
+    // Calculate stats
+    const totalOrders = orders.length;
+    const pendingOrders = orders.filter(o => o.status === 'Pending').length;
+    const completedOrders = orders.filter(o => o.status === 'Completed').length;
+    const cancelledOrders = orders.filter(o => o.status === 'Cancelled').length;
+    
+    document.getElementById('totalOrdersCount').innerText = totalOrders;
+    document.getElementById('pendingOrdersCount').innerText = pendingOrders;
+    document.getElementById('completedOrdersCount').innerText = completedOrders;
+    document.getElementById('cancelledOrdersCount').innerText = cancelledOrders;
+    
+    const tbody = document.getElementById('orderTableBody');
+    tbody.innerHTML = '';
+    
+    if (orders.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center;">No orders found.</td></tr>';
+        return;
+    }
+    
+    orders.forEach((order, index) => {
+        const row = document.createElement('tr');
+        const productNames = order.items.map(item => item.name).join(', ');
+        const vendorName = getVendorName(order.vendorId) || 'N/A';
+        
+        let statusClass = '';
+        if (order.status === 'Pending') statusClass = 'status-pending';
+        else if (order.status === 'Approved' || order.status === 'Processing') statusClass = 'status-approved';
+        else if (order.status === 'Completed') statusClass = 'status-approved';
+        else if (order.status === 'Cancelled' || order.status === 'Rejected') statusClass = 'status-rejected';
+        
+        row.innerHTML = `
+            <td>#${order.id}</td>
+            <td>${order.customerName || 'Guest'}</td>
+            <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis;" title="${productNames}">${productNames}</td>
+            <td>$${order.total.toFixed(2)}</td>
+            <td><span class="${statusClass}">${order.status}</span></td>
+            <td>${vendorName}</td>
+            <td>${order.date || 'N/A'}</td>
+            <td>
+                ${order.status === 'Pending' ? `<button class="approve" onclick="updateOrderStatus(${index}, 'Processing')">Process</button>` : ''}
+                ${order.status === 'Processing' ? `<button class="approve" onclick="updateOrderStatus(${index}, 'Completed')">Complete</button>` : ''}
+                ${order.status !== 'Completed' && order.status !== 'Cancelled' ? `<button class="reject" onclick="updateOrderStatus(${index}, 'Cancelled')">Cancel</button>` : ''}
+                <button class="delete" onclick="viewOrderDetails(${index})">View</button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+function updateOrderStatus(index, newStatus) {
+    orders = JSON.parse(localStorage.getItem('orders') || '[]');
+    if (index >= 0 && index < orders.length) {
+        orders[index].status = newStatus;
+        localStorage.setItem('orders', JSON.stringify(orders));
+        renderOrdersTable();
+        alert(`Order #${orders[index].id} status updated to ${newStatus}`);
+    }
+}
+
+function viewOrderDetails(index) {
+    orders = JSON.parse(localStorage.getItem('orders') || '[]');
+    if (index >= 0 && index < orders.length) {
+        const order = orders[index];
+        const productDetails = order.items.map(item => 
+            `${item.name} (x${item.quantity}) - $${item.price}`
+        ).join('\n');
+        
+        alert(`Order #${order.id}\n\nCustomer: ${order.customerName}\nWhatsApp: ${order.customerWhatsapp || 'N/A'}\nAddress: ${order.customerAddress || 'N/A'}\n\nProducts:\n${productDetails}\n\nTotal: $${order.total}\nStatus: ${order.status}\nDate: ${order.date}`);
+    }
+}
+// ⭐ ====== END ORDER MANAGEMENT FUNCTIONS ======
+
+// ⭐ ====== CUSTOMER MANAGEMENT FUNCTIONS ======
+function renderCustomersTable() {
+    loadData();
+    const customers = JSON.parse(localStorage.getItem('customers') || '[]');
+    
+    const tbody = document.getElementById('customerTableBody');
+    tbody.innerHTML = '';
+    
+    if (customers.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">No customers found.</td></tr>';
+        return;
+    }
+    
+    customers.forEach((customer, index) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${index + 1}</td>
+            <td>${customer.username}</td>
+            <td>${customer.whatsapp || 'N/A'}</td>
+            <td>
+                <button class="delete" onclick="deleteCustomer(${index})">Delete</button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+function deleteCustomer(index) {
+    const customers = JSON.parse(localStorage.getItem('customers') || '[]');
+    if (confirm(`Are you sure you want to delete customer ${customers[index].username}?`)) {
+        customers.splice(index, 1);
+        localStorage.setItem('customers', JSON.stringify(customers));
+        renderCustomersTable();
+        alert('Customer deleted.');
+    }
+}
+// ⭐ ====== END CUSTOMER MANAGEMENT FUNCTIONS ======
+
 </script>
 </body>
 </html>
